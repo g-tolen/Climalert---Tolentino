@@ -1,6 +1,7 @@
 package com.example.Climalert.services;
 
 import com.example.Climalert.model.ClimaRegistro;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.sendgrid.*;
@@ -17,8 +18,12 @@ public class ClimaService {
 
   private final List<ClimaRegistro> historialLocal = new ArrayList<>();
   private final RestTemplate restTemplate = new RestTemplate();
-  private final String apiKeyClima = "2aa5979551734ae18f152942260407";
-  private final String sendGridApiKey = "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";
+
+  @Value("${weather.api.key}")
+  private String apiKeyClima;
+
+  @Value("${custom.sendgrid.api-key}")
+  private String sendGridApiKey;
 
   public void consultarProveedorExterno() {
     try {
@@ -28,10 +33,16 @@ public class ClimaService {
       if (response != null && response.getCurrent() != null) {
         Double temp = response.getCurrent().getTemp_c();
         Integer hum = response.getCurrent().getHumidity();
-        historialLocal.add(new ClimaRegistro(temp, hum));
+
+        ClimaRegistro nuevo = new ClimaRegistro(temp, hum);
+        historialLocal.add(nuevo);
+
+        System.out.println(" Reporte del Clima en Buenos Aires");
+        System.out.println("Temperatura: " + temp + "°C");
+        System.out.println("Humedad: " + hum + "%");
       }
     } catch (Exception e) {
-      System.err.println("Error en WeatherAPI: " + e.getMessage());
+      System.err.println("Error al consultar la API: " + e.getMessage());
     }
   }
 
@@ -42,11 +53,12 @@ public class ClimaService {
   }
 
   public void enviarAlertaPorMail(ClimaRegistro clima) {
-    Email from = new Email("gtolentino@frba.utn.edu.ar", "Sistema Climalert");
-    String subject = " Climalert - Alerta climatica critica";
+
+    Email from = new Email("climalert4@gmail.com", "Sistema Climalert");
+    String subject = "Climalert - Alerta climatica critica";
 
     String cuerpo = " CONDICIONES CLIMATICAS CRITICAS \n\n" +
-        "Detalle del reporte meteorológico:\n" +
+        "Detalle del clima:\n" +
         " Temperatura: " + clima.getTemperatura() + "°C\n" +
         " Humedad: " + clima.getHumedad() + "%\n" +
         " Horario del registro: " + clima.getFechaHora() + "\n\n" +
